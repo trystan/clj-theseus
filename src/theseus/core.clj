@@ -1,4 +1,7 @@
 (ns theseus.core
+  (:use lacij.edit.graph
+        lacij.view.graphview
+        (lacij.layouts core layout))
   (:gen-class))
 
 
@@ -68,3 +71,23 @@
     (run path {}))
   ([path state]
     (reduce run-action state path)))
+
+
+(defn draw [actions path]
+  "Draw an svg graph to the specificed path."
+  (let [add-nodes (fn [g nodes]
+          (reduce (fn [g n] (add-node g n (.replace (name n) "-" " ")))
+                  g
+                  nodes))
+        add-edges (fn [g edges]
+          (reduce (fn [g e]
+                    (add-label (add-edge g (:id e) (:from e) (:to e)) (:id e) (:name e)))
+                  g
+                  edges))
+        g (-> (graph :width 800 :height 800)
+              (add-default-edge-style :stroke "grey")
+              (add-nodes (distinct (concat (map :from actions) (map :to actions))))
+              (add-edges actions)
+              (layout :hierarchical :flow :out)
+              (build))]
+    (export g path :indent "yes")))
