@@ -1,12 +1,12 @@
 # theseus
 
-Path-based testing decomplected.
+**Path-based testing decomplected.**
 
-The ideal of theseus is that with a good description of the states, actions, and invariants of your application, you could query for and run the smallest set of paths that verify that your app does what you expect it to. Or whatever you want, it's just data.
+The ideal of theseus is that with a good description of your application, you could query for and run the smallest set of paths that verify that your app does what you expect it to. Or whatever you want, it's just data.
 
 **Path-based** because theseus creates paths through your app for you.
 
-**Decomplected** because instead of having a large set of automated integration tests where each test navigates through your system to a specific place, does something, then verifies some state; you keep your assertions, data, states, how to navigate, how to do domain actions, invariants, etc all seperate and theseus combindes them for you.
+**Decomplected** because instead of having a large set of automated integration tests where each test navigates through your system to a specific place, does something, then verifies some state; you keep your assertions, data, states, how to navigate, how to do domain actions, etc all seperate and theseus combindes them for you.
 
 First you create a catalog of facts about your system that describe preconditions, postconditions, actions, states, and descriptions about your system. Each fact is a map with several keys:
 
@@ -49,46 +49,46 @@ In Leiningen:
 
 (def catalog [
   {:id :login
-  :name "login"
-  :from :start-screen
-  :to :home-screen
-  :fn increment-state-counter}
+   :name "login"
+   :from :start-screen
+   :to :home-screen
+   :fn increment-state-counter}
 
   {:id :become-fancy
-  :name "fancify"
-  :from :home-screen
-  :to :fancy-screen
-  :fn increment-state-counter}
+   :name "fancify"
+   :from :home-screen
+   :to :fancy-screen
+   :fn increment-state-counter}
 
   {:id :logout-from-fancy-screen
-  :name "logout"
-  :from :fancy-screen
-  :to :logout-screen
-  :fn increment-state-counter}
+   :name "logout"
+   :from :fancy-screen
+   :to :logout-screen
+   :fn increment-state-counter}
 
   {:id :go-to-help
-  :name "help"
-  :from :home-screen
-  :to :help-screen
-  :fn increment-state-counter}
+   :name "help"
+   :from :home-screen
+   :to :help-screen
+   :fn increment-state-counter}
 
   {:id :logout-from-help-screen
-  :name "logout"
-  :from :help-screen
-  :to :logout-screen
-  :fn increment-state-counter}
+   :name "logout"
+   :from :help-screen
+   :to :logout-screen
+   :fn increment-state-counter}
 
   {:before :all
-  :invariant (fn [state]
-  (has-content (str "Hello " (:user-name state))))}
+   :invariant (fn [state]
+                  (has-content (str "Hello " (:user-name state))))}
 
   {:after :each
-  :invariant (fn [state]
-  (has-content (str "Hello " (:user-name state))))}
+   :invariant (fn [state]
+                  (has-content (str "Hello " (:user-name state))))}
 
   {:before :go-to-help
-  :invariant (fn [state]
-  (has-content (str "Hello " (:user-name state))))}])
+   :invariant (fn [state]
+                  (has-content (str "Hello " (:user-name state))))}])
 
 (draw catalog "/tmp/example.svg")
 ;; returns => nil
