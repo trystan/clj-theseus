@@ -1,31 +1,26 @@
 (ns theseus.core
-  (:use lacij.edit.graph
-        lacij.view.graphview
-        (lacij.layouts core layout))
+  (:require [lacij.edit.graph :refer :all]
+            [lacij.layouts.layout :refer :all]
+            [lacij.view.graphview :refer [export]])
   (:gen-class))
 
 
-(defn not-in? [coll x]
-  "Return true if x is not in coll"
-  (not (some #{x} coll)))
+(defn not-in?
+  "Return true if x is not in coll."
+  [coll x]
+  (not-any? (hash-set x) coll))
 
 
-(defn run-action [state action]
-  "Run the state through an action. Run any invariant as well."
-  (when (:invariant action)
-    ((:invariant action) state))
-  (if (:fn action)
-    ((:fn action) state)
-    state))
 
-
-(defn actions-from [place graph]
+(defn actions-from
   "Find all actions from some place in a graph."
+  [place graph]
   (filter #(= place (:from %)) graph))
 
 
-(defn step [path graph]
+(defn step
   "Find all valid next steps of some path in a graph."
+  [path graph]
   (let [next-steps (actions-from (:to (last path)) graph)
         valid-next-steps (filter (partial not-in? path) next-steps)]
     (if (seq valid-next-steps)
@@ -33,13 +28,15 @@
       [path])))
 
 
-(defn steps [paths graph]
+(defn steps
   "Find all valid next steps of some paths in a graph."
+  [paths graph]
   (mapcat #(step % graph) paths))
 
 
-(defn paths-from [paths graph]
+(defn paths-from
   "Find all valid continuations of some paths in a graph."
+  [paths graph]
   (loop [current-paths paths
          next-paths (steps paths graph)]
     (if (= next-paths current-paths)
@@ -47,8 +44,9 @@
       (recur next-paths (steps next-paths graph)))))
 
 
-(defn sub-paths-to [to path]
+(defn sub-paths-to
   "Find all subpaths of a path that end at a specific place."
+  [to path]
   (loop [so-far []
          [here & remaining] path
          paths []]
@@ -68,14 +66,24 @@
           before-each (filter #(= :each (:before %)) graph)
           after-all (filter #(= :all (:after %)) graph)
           after-each (filter #(= :each (:after %)) graph)
-          before-one (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) graph))
-          after-one (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) graph))
-          starting-paths (map (partial vector) (actions-from from graph))
+          before (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) graph))
+          after (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) graph))
+          starting-paths (map vector (actions-from from graph))
           all-paths (paths-from starting-paths graph)]
       (->> all-paths
            (mapcat #(sub-paths-to to %))
-           (map #(mapcat (fn [x] (concat before-each (before-one x) [x] (after-one x) after-each)) %))
+           (map #(mapcat (fn [x] (concat before-each (before x) [x] (after x) after-each)) %))
            (map #(concat before-all % after-all))))))
+
+
+(defn run-action
+  "Run the state through the :fn of an action (if it exists). Pass the state to an :invariant function as well."
+  [state action]
+  (when (:invariant action)
+    ((:invariant action) state))
+  (if (:fn action)
+    ((:fn action) state)
+    state))
 
 (defn run
   "Run the actions in a given path. Takes an optional state to pass through."
@@ -85,8 +93,9 @@
     (reduce run-action state path)))
 
 
-(defn draw [actions path]
+(defn draw
   "Draw an svg graph to the specificed path."
+  [actions path]
   (let [valid-nodes (filter :name actions)
         add-nodes (fn [g nodes]
           (reduce (fn [g n] (add-node g n (.replace (name n) "-" " ")))
@@ -97,7 +106,7 @@
                     (add-label (add-edge g (:id e) (:from e) (:to e)) (:id e) (:name e)))
                   g
                   edges))
-        g (-> (graph :width 800 :height 800)
+        g (-> (graph :width 1024 :height 768)
               (add-default-edge-style :stroke "grey")
               (add-nodes (distinct (concat (map :from valid-nodes) (map :to valid-nodes))))
               (add-edges valid-nodes)

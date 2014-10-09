@@ -1,6 +1,9 @@
 # theseus
 
-Path-based testing. Describe and traverse paths of your application.
+Path-based testing decomplected.
+
+Describe your application as a state machine with states and actions.
+Query that description for the shortest path from A to B, all paths from A,
 
 ## Installation
 

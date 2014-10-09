@@ -1,10 +1,8 @@
-(ns theseus.core-example
+(ns theseus.example
   (:require [theseus.core :refer :all]))
 
 (defn increment-state-counter [state]
-  (if (:counter state)
-    (assoc state :counter (inc (:counter state)))
-    (assoc state :counter 1)))
+  (assoc state :counter (inc (:counter state 0))))
 
 (defn has-content [something]
   true)
@@ -26,9 +24,7 @@
    :name "logout"
    :from :fancy-screen
    :to :logout-screen
-   :fn (fn [state]
-         { :pre [(< 1 (:counter state))] } ;; you can use clojure pre and post conditions
-         (increment-state-counter state))}
+   :fn increment-state-counter}
 
   {:id :go-to-help
    :name "help"
@@ -40,9 +36,7 @@
    :name "logout"
    :from :help-screen
    :to :logout-screen
-   :fn (fn [state]
-         { :pre [(< 1 (:counter state))] } ;; you can use clojure pre and post conditions
-         (increment-state-counter state))}
+   :fn increment-state-counter}
 
   {:before :all
    :invariant (fn [state]
@@ -54,14 +48,9 @@
 
   {:before :go-to-help
    :invariant (fn [state]
-                (has-content (str "Hello " (:user-name state))))}
-
-  {:before :help-screen
-   :invariant (fn [state]
                 (has-content (str "Hello " (:user-name state))))}])
 
-(map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
-
-((comp run first) (paths catalog :start-screen :logout-screen))
-
 (draw catalog "/tmp/example.svg")
+
+(map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
+((comp run first) (paths catalog :start-screen :logout-screen))
