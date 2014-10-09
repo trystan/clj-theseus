@@ -2,8 +2,32 @@
 
 Path-based testing decomplected.
 
-Describe your application as a state machine with states and actions.
-Query that description for the shortest path from A to B, all paths from A,
+The ideal of theseus is that with a good description of the states, actions, and invariants of your application, you could query for and run the smallest set of paths that verify that your app does what you expect it to. Or whatever you want, it's just data.
+
+*Path-based* because theseus creates paths through your app for you.
+
+*Decomplected* because instead of having a large set of automated integration tests where each test navigates through your system to a specific place, does something, then verifies some state, you keep your assertions, data, states, how to navigate, how to do domain acitons, preconditions, postconditions, etc all seperate and theseus combindes them for you.
+
+First you create a catalog of facts about your system that describe preconditions, postconditions, actions, states, and descriptions about your system. Each fact is a map with several keys:
+
+<table>
+  <tr><td>:id</td>
+      <td>A unique identifier. Optional, unless you want this fact to be the target of a :before or :after.</td></tr>
+  <tr><td>:name</td>
+      <td>A natural language description that is displayed when drawing a graph of your system. Required if you want it to show up when drawing a graph.</td></tr>
+  <tr><td>:from</td>
+      <td>The state this action is available from. Optional but expected of actions.</td></tr>
+  <tr><td>:to</td>
+      <td>The state your system is in after this action is run. Optional but expected of actions.</td></tr>
+  <tr><td>:fn</td>
+      <td>A function that takes the current state and returns a new one. Don't put assertions in :fn functions - assertions should go in :invariant functions. If an invariant and an fn are both present on the same fact, the invariant will be run first. Optional but expected of actions.</td></tr>
+  <tr><td>:before</td>
+      <td>If specified, this action will appear before the value. Optional but expected of invariants and setup. Can be :all, :each, or the :id of another action.</td></tr>
+  <tr><td>:after</td>
+      <td>If specified, this action will appear after the value. Optional but expected of invariants and cleanup. Can be :all, :each, or the :id of another action.</td></tr>
+  <tr><td>:invariant</td>
+      <td>A function that takes the current state. It's return value is ignored. If an invariant and an fn are both present on the same fact, the invariant will be run first.</td></tr>
+</table>
 
 ## Installation
 
@@ -13,57 +37,69 @@ In Leiningen:
 
 ## Example
 
-    (ns theseus.core-example
+    (ns theseus.example
       (:require [theseus.core :refer :all]))
 
-    (defn increment-state-counter [state]
-      (if (:counter state)
-        (assoc state :counter (inc (:counter state)))
-        (assoc state :counter 1)))
+    (defn increment-state-counter [state] ; just an example action
+      (assoc state :counter (inc (:counter state 0))))
 
+    (defn has-content [something] ; just an example assertion
+      true)
 
     (def catalog [
       {:id :login
+       :name "login"
        :from :start-screen
        :to :home-screen
        :fn increment-state-counter}
 
       {:id :become-fancy
+       :name "fancify"
        :from :home-screen
        :to :fancy-screen
        :fn increment-state-counter}
 
       {:id :logout-from-fancy-screen
+       :name "logout"
        :from :fancy-screen
        :to :logout-screen
-       :fn (fn [state]
-             { :pre [(< 1 (:counter state))] } ;; you can use clojure pre and post conditions
-             (increment-state-counter state))}
+       :fn increment-state-counter}
 
       {:id :go-to-help
+       :name "help"
        :from :home-screen
        :to :help-screen
        :fn increment-state-counter}
 
       {:id :logout-from-help-screen
+       :name "logout"
        :from :help-screen
        :to :logout-screen
-       :fn (fn [state]
-             { :pre [(< 1 (:counter state))] } ;; you can use clojure pre and post conditions
-             (increment-state-counter state))}])
+       :fn increment-state-counter}
 
-    (map #(map :id %) (paths catalog :start-screen :logout-screen))
+      {:before :all
+       :invariant (fn [state]
+                    (has-content (str "Hello " (:user-name state))))}
 
-    ;; returns ((:login :become-fancy :logout-from-fancy-screen) (:login :go-to-help :logout-from-help-screen))
+      {:after :each
+       :invariant (fn [state]
+                    (has-content (str "Hello " (:user-name state))))}
+
+      {:before :go-to-help
+       :invariant (fn [state]
+                    (has-content (str "Hello " (:user-name state))))}])
+
+    (draw catalog "/tmp/example.svg")
+
+    (map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
 
     ((comp run first) (paths catalog :start-screen :logout-screen))
-
-    ;; returns {:counter 3}
 
 
 ## To do
 
-Generate graphs from a list of actions. Maybe using `graphvis` or something.
+Allow `:before` and `:after` to apply to states as well as `:all`, `:each`, and a specific id. I'm not sure how that would work out best, but it would be nice to verify invariants of a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
+
 
 Have actions express data preconditions that other actions can use. So a `share-on-facebook` action can express that it only works with users who have facebook accounts and an earlier `login` action would know to login as a facebook user.
 
@@ -73,15 +109,3 @@ Have actions express data preconditions that other actions can use. So a `share-
      :to :after-share-screen
      :fn (partial share-on "facebook")
      :requires { :is-facebook-user true })}
-
-
-
-Define seperate assertions that can be run at the right time. So a `verify-shared-on-facebook` assertion would be run in another tab or background worker whenever something is shared on facebook.
-
-    ;; just a possible thought
-    {:id :verify-shared-on-facebook
-     :after :share-on-facebook
-     :fn (fn [state]
-           (visit facebook-url)
-           (login-to-facebook-if-necessary (:facebook-user state))
-           (assert-post-is-on-wall (:post-text state)))}

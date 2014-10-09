@@ -53,4 +53,5 @@
 (draw catalog "/tmp/example.svg")
 
 (map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
+
 ((comp run first) (paths catalog :start-screen :logout-screen))
