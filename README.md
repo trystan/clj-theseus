@@ -6,7 +6,7 @@ The ideal of theseus is that with a good description of your application, you co
 
 **Path-based** because theseus creates paths through your app for you.
 
-**Decomplected** because instead of having a large set of automated integration tests where each test navigates through your system to a specific place, does something, then verifies some state; you keep your assertions, data, states, how to navigate, how to do domain actions, etc all seperate and theseus combindes them for you.
+**Decomplected** because instead of having a large set of automated integration tests where each test navigates through your system to a specific place, does some stuff, and verifies some state along the way; you keep your assertions, data, states, how to navigate, how to do domain actions, etc all seperate and theseus combines them for you.
 
 First you create a catalog of facts about your system that describe preconditions, postconditions, actions, states, and descriptions about your system. Each fact is a map with several keys:
 
