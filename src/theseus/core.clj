@@ -12,7 +12,9 @@
 
 (defn run-action [state action]
   "Run the state through an action."
-  ((:fn action) state))
+  (if (:fn action)
+    ((:fn action) state)
+    state))
 
 
 (defn actions-from [place graph]
@@ -58,12 +60,20 @@
 
 
 (defn paths
-  "Find all paths in the graph of defined actions from one place to another."
+  "Find all paths in the graph of defined actions from one place to another. Includes befores and afters."
   ([graph from to]
-    (let [starting-paths (map (partial vector) (actions-from from graph))
+    (let [before-all (filter #(= :all (:before %)) graph)
+          before-each (filter #(= :each (:before %)) graph)
+          after-all (filter #(= :all (:after %)) graph)
+          after-each (filter #(= :each (:after %)) graph)
+          before-one (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) graph))
+          after-one (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) graph))
+          starting-paths (map (partial vector) (actions-from from graph))
           all-paths (paths-from starting-paths graph)]
-      (mapcat (partial sub-paths-to to) all-paths))))
-
+      (->> all-paths
+           (mapcat #(sub-paths-to to %))
+           (map #(mapcat (fn [x] (concat before-each (before-one x) [x] (after-one x) after-each)) %))
+           (map #(concat before-all % after-all))))))
 
 (defn run
   "Run the actions in a given path. Takes an optional state to pass through."
@@ -75,7 +85,8 @@
 
 (defn draw [actions path]
   "Draw an svg graph to the specificed path."
-  (let [add-nodes (fn [g nodes]
+  (let [valid-nodes (filter :name actions)
+        add-nodes (fn [g nodes]
           (reduce (fn [g n] (add-node g n (.replace (name n) "-" " ")))
                   g
                   nodes))
@@ -86,8 +97,8 @@
                   edges))
         g (-> (graph :width 800 :height 800)
               (add-default-edge-style :stroke "grey")
-              (add-nodes (distinct (concat (map :from actions) (map :to actions))))
-              (add-edges actions)
+              (add-nodes (distinct (concat (map :from valid-nodes) (map :to valid-nodes))))
+              (add-edges valid-nodes)
               (layout :hierarchical :flow :out)
               (build))]
     (export g path :indent "yes")))

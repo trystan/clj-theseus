@@ -6,6 +6,8 @@
     (assoc state :counter (inc (:counter state)))
     (assoc state :counter 1)))
 
+(defn has-content [something]
+  true)
 
 (def catalog [
   {:id :login
@@ -40,9 +42,25 @@
    :to :logout-screen
    :fn (fn [state]
          { :pre [(< 1 (:counter state))] } ;; you can use clojure pre and post conditions
-         (increment-state-counter state))}])
+         (increment-state-counter state))}
 
-(map #(map :id %) (paths catalog :start-screen :logout-screen))
+  {:before :all
+   :verify (fn [state]
+             (has-content (str "Hello " (:user-name state))))}
+
+  {:after :each
+   :verify (fn [state]
+             (has-content (str "Hello " (:user-name state))))}
+
+  {:before :go-to-help
+   :verify (fn [state]
+             (has-content (str "Hello " (:user-name state))))}
+
+  {:before :help-screen
+   :verify (fn [state]
+             (has-content (str "Hello " (:user-name state))))}])
+
+(map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
 
 ((comp run first) (paths catalog :start-screen :logout-screen))
 
