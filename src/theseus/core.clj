@@ -11,7 +11,9 @@
 
 
 (defn run-action [state action]
-  "Run the state through an action."
+  "Run the state through an action. Run any invariant as well."
+  (when (:invariant action)
+    ((:invariant action) state))
   (if (:fn action)
     ((:fn action) state)
     state))

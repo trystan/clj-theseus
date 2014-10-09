@@ -45,20 +45,20 @@
          (increment-state-counter state))}
 
   {:before :all
-   :verify (fn [state]
-             (has-content (str "Hello " (:user-name state))))}
+   :invariant (fn [state]
+                (has-content (str "Hello " (:user-name state))))}
 
   {:after :each
-   :verify (fn [state]
-             (has-content (str "Hello " (:user-name state))))}
+   :invariant (fn [state]
+                (has-content (str "Hello " (:user-name state))))}
 
   {:before :go-to-help
-   :verify (fn [state]
-             (has-content (str "Hello " (:user-name state))))}
+   :invariant (fn [state]
+                (has-content (str "Hello " (:user-name state))))}
 
   {:before :help-screen
-   :verify (fn [state]
-             (has-content (str "Hello " (:user-name state))))}])
+   :invariant (fn [state]
+                (has-content (str "Hello " (:user-name state))))}])
 
 (map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
 

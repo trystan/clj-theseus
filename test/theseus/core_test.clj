@@ -19,7 +19,6 @@
     (is (= [[{ :from :a :to :b } { :from :b :to :a } { :from :a :to :c }]]
            (steps [[{ :from :a :to :b } { :from :b :to :a }]] [{ :from :a :to :b } { :from :a :to :c }])))))
 
-
 (deftest walking-all-actions
   (is (= [[{ :from :a :to :b } { :from :b :to :c }] [{ :from :a :to :c }]]
          (paths [{ :from :a :to :b }
@@ -99,10 +98,24 @@
                  { :from :a :to :c }]
                 :a :c))))
 
+(def invariant-counter (atom 0))
+
 (deftest running-actions
-  (is (= { :first? true :second? true }
-         (run [{ :id :a :fn #(assoc % :first? true) }
-               { :something :else }
-               { :id :b :fn #(assoc % :second? true) }]))))
+  (testing "runs fn"
+    (is (= { :first? true :second? true }
+           (run [{ :id :a :fn #(assoc % :first? true) }
+                 { :something :else }
+                 { :id :b :fn #(assoc % :second? true) }]))))
+
+  (testing "runs invariant"
+    (let [before @invariant-counter
+          result (run [{ :id :a :fn #(assoc % :first? true) }
+                       { :invariant (fn [state] (swap! invariant-counter inc)) }
+                       { :id :b :fn #(assoc % :second? true) }])
+          after @invariant-counter]
+      (is (= { :first? true :second? true }
+             result))
+      (is (= (inc before)
+             after)))))
 
 (run-tests)
