@@ -29,6 +29,8 @@ First you create a catalog of facts about your system that describe precondition
       <td>A function that takes the current state. It's return value is ignored. If an :invariant and an :fn are both present on the same fact, the invariant will be run first.</td></tr>
 </table>
 
+Most facts will be either descriptions of actions that have a `:from`, `:to`, and `:fn` or descriptions of what you expect that have either a `:before`, or an `:after`, and an `:invariant`.
+
 ## Installation
 
 In Leiningen:
@@ -47,7 +49,7 @@ In Leiningen:
 (defn has-content [something] ; just an example assertion
   true)
 
-(def catalog [
+(def facts [
   {:id :login
    :name "login"
    :from :start-screen
@@ -90,22 +92,47 @@ In Leiningen:
    :invariant (fn [state]
                   (has-content (str "Hello " (:user-name state))))}])
 
-(draw catalog "/tmp/example.svg")
+(draw facts "/tmp/example.svg")
 ;; returns => nil
 
-(map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
+(map #(map :id (filter :id %)) (paths facts :start-screen :logout-screen))
 ;; returns => ((:login :become-fancy :logout-from-fancy-screen) (:login :go-to-help :logout-from-help-screen))
 
-((comp run first) (paths catalog :start-screen :logout-screen))
+((comp run first) (paths facts :start-screen :logout-screen))
 ;; returns => {:counter 3}
 ```
 
 ## To do
 
-Allow `:before` and `:after` to apply to states as well as `:all`, `:each`, and a specific id. I'm not sure how that would work out best, but it would be nice to verify invariants of a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
+**Allow `:before` and `:after` to apply to states** as well as `:all`, `:each`, and a specific id. I'm not sure how that would work out best, but it would be nice to verify invariants of a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
 
+**Let paths fork from each other.** This would be usefull if an action had a lot of side effects that could be verified in parallel. I think it would be safe to fork paths as long as they didn't affect what has been done before them so maybe it would be better to express that.
+```clj
+;; just a possible thought
+{:id :share-everywhere
+ :from :share-screen
+ :to :share-confirmation-screen
+ :fn (fn [state]
+       (->> state
+         (share-on "facebook")
+         (share-on "reddit")
+         (share-on "linked in")
+         (share-on "twitter")))}
+{:after :share-everywhere
+ :fork true
+ :invariant (partial verify-shared-on "facebook")}
+{:after :share-everywhere
+ :fork true
+ :invariant (partial verify-shared-on "reddit")}
+{:after :share-everywhere
+ :fork true
+ :invariant (partial verify-shared-on "linked in")}
+{:after :share-everywhere
+ :fork true
+ :invariant (partial verify-shared-on "twitter")}
+```
 
-Have actions express data preconditions that other actions can use. So a `share-on-facebook` action can express that it only works with users who have facebook accounts and an earlier `login` action would know to login as a facebook user.
+**Have actions express data preconditions** that other actions can use. So a `share-on-facebook` action can express that it only works with users who have facebook accounts and an earlier `login` action would know to login as a facebook user.
 
 ```clj
 ;; just a possible thought

@@ -7,7 +7,7 @@
 (defn has-content [something]
   true)
 
-(def catalog [
+(def facts [
   {:id :login
    :name "login"
    :from :start-screen
@@ -50,8 +50,8 @@
    :invariant (fn [state]
                 (has-content (str "Hello " (:user-name state))))}])
 
-(draw catalog "/tmp/example.svg")
+(draw facts "/tmp/example.svg")
 
-(map #(map :id (filter :id %)) (paths catalog :start-screen :logout-screen))
+(map #(map :id (filter :id %)) (paths facts :start-screen :logout-screen))
 
-((comp run first) (paths catalog :start-screen :logout-screen))
+((comp run first) (paths facts :start-screen :logout-screen))

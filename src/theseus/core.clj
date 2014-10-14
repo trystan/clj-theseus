@@ -13,15 +13,15 @@
 
 
 (defn actions-from
-  "Find all actions from some place in a graph."
-  [place graph]
-  (filter #(= place (:from %)) graph))
+  "Find all actions from some place in a collection of facts."
+  [place facts]
+  (filter #(= place (:from %)) facts))
 
 
 (defn step
-  "Find all valid next steps of some path in a graph."
-  [path graph]
-  (let [next-steps (actions-from (:to (last path)) graph)
+  "Find all valid next steps of some path in a collection of facts."
+  [path facts]
+  (let [next-steps (actions-from (:to (last path)) facts)
         valid-next-steps (filter (partial not-in? path) next-steps)]
     (if (seq valid-next-steps)
       (map #(conj path %) valid-next-steps)
@@ -29,19 +29,19 @@
 
 
 (defn steps
-  "Find all valid next steps of some paths in a graph."
-  [paths graph]
-  (mapcat #(step % graph) paths))
+  "Find all valid next steps of some paths in a collection of facts."
+  [paths facts]
+  (mapcat #(step % facts) paths))
 
 
 (defn paths-from
-  "Find all valid continuations of some paths in a graph."
-  [paths graph]
+  "Find all valid continuations of some paths in a collection of facts."
+  [paths facts]
   (loop [current-paths paths
-         next-paths (steps paths graph)]
+         next-paths (steps paths facts)]
     (if (= next-paths current-paths)
       next-paths
-      (recur next-paths (steps next-paths graph)))))
+      (recur next-paths (steps next-paths facts)))))
 
 
 (defn sub-paths-to
@@ -60,16 +60,16 @@
 
 
 (defn paths
-  "Find all paths in the graph of defined actions from one place to another. Includes befores and afters."
-  ([graph from to]
-    (let [before-all (filter #(= :all (:before %)) graph)
-          before-each (filter #(= :each (:before %)) graph)
-          after-all (filter #(= :all (:after %)) graph)
-          after-each (filter #(= :each (:after %)) graph)
-          before (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) graph))
-          after (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) graph))
-          starting-paths (map vector (actions-from from graph))
-          all-paths (paths-from starting-paths graph)]
+  "Find all paths in the facts of defined actions from one place to another. Includes befores and afters."
+  ([facts from to]
+    (let [before-all (filter #(= :all (:before %)) facts)
+          before-each (filter #(= :each (:before %)) facts)
+          after-all (filter #(= :all (:after %)) facts)
+          after-each (filter #(= :each (:after %)) facts)
+          before (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) facts))
+          after (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) facts))
+          starting-paths (map vector (actions-from from facts))
+          all-paths (paths-from starting-paths facts)]
       (->> all-paths
            (mapcat #(sub-paths-to to %))
            (map #(mapcat (fn [x] (concat before-each (before x) [x] (after x) after-each)) %))
@@ -94,9 +94,9 @@
 
 
 (defn draw
-  "Draw an svg graph to the specificed path."
-  [actions path]
-  (let [valid-nodes (filter :name actions)
+  "Draw an svg facts of a collection of facts."
+  [facts path]
+  (let [valid-nodes (filter :name facts)
         add-nodes (fn [g nodes]
           (reduce (fn [g n] (add-node g n (.replace (name n) "-" " ")))
                   g
