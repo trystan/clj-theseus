@@ -39,15 +39,15 @@
    :fn increment-state-counter}
 
   {:before :all
-   :invariant (fn [state]
+   :verify (fn [state]
                 (has-content (str "Hello " (:user-name state))))}
 
   {:after :each
-   :invariant (fn [state]
+   :verify (fn [state]
                 (has-content (str "Hello " (:user-name state))))}
 
   {:before :go-to-help
-   :invariant (fn [state]
+   :verify (fn [state]
                 (has-content (str "Hello " (:user-name state))))}])
 
 (draw facts "/tmp/example.svg")

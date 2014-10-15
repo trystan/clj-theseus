@@ -11,25 +11,34 @@
   (not-any? (hash-set x) coll))
 
 
-
 (defn actions-from
   "Find all actions from some place in a collection of facts."
   [place facts]
   (filter #(= place (:from %)) facts))
 
 
+(defn has-value-or-missing [m k v]
+  (= (get m k v) v))
+
+(defn compatable-requirements [requires m]
+  (if (nil? requires)
+    true
+    (reduce #(and %1 %2) (map #(has-value-or-missing m % (get requires %)) (keys requires)))))
+
 (defn step
-  "Find all valid next steps of some path in a collection of facts."
+  "Find all valid next steps of one path in a collection of facts."
   [path facts]
-  (let [next-steps (actions-from (:to (last path)) facts)
-        valid-next-steps (filter (partial not-in? path) next-steps)]
+  (let [requires (apply merge (map :requires path))
+        next-steps (actions-from (:to (last path)) facts)
+        compatable-steps (filter #(compatable-requirements requires (:requires %)) next-steps)
+        valid-next-steps (filter (partial not-in? path) compatable-steps)]
     (if (seq valid-next-steps)
       (map #(conj path %) valid-next-steps)
       [path])))
 
 
 (defn steps
-  "Find all valid next steps of some paths in a collection of facts."
+  "Find all valid next steps of many paths in a collection of facts."
   [paths facts]
   (mapcat #(step % facts) paths))
 
@@ -47,16 +56,18 @@
 (defn sub-paths-to
   "Find all subpaths of a path that end at a specific place."
   [to path]
-  (loop [so-far []
-         [here & remaining] path
-         paths []]
-    (cond
-     (nil? here)
-       paths
-     (= to (:to here))
-       (recur (conj so-far here) remaining (conj paths (conj so-far here)))
-     :else
-       (recur (conj so-far here) remaining paths))))
+  (if (== 1 (count path))
+    [path]
+    (loop [so-far []
+           [here & remaining] path
+           paths []]
+      (cond
+       (nil? here)
+         paths
+       (= to (:to here))
+         (recur (conj so-far here) remaining (conj paths (conj so-far here)))
+       :else
+         (recur (conj so-far here) remaining paths)))))
 
 
 (defn paths
@@ -77,18 +88,17 @@
 
 
 (defn run-action
-  "Run the state through the :fn of an action (if it exists). Pass the state to an :invariant function as well."
+  "Run the state through the :fn of an action (if it exists). Pass the state to any :verify function after as well."
   [state action]
-  (when (:invariant action)
-    ((:invariant action) state))
-  (if (:fn action)
-    ((:fn action) state)
-    state))
+  (let [new-state ((get action :fn identity) state)]
+    (when (:verify action)
+      ((:verify action) state))
+    new-state))
 
 (defn run
-  "Run the actions in a given path. Takes an optional state to pass through."
+  "Run the actions in a given path. Takes an optional state to pass through; otherwise, all :requires will be merged for the initial state."
   ([path]
-    (run path {}))
+    (run path (reduce merge {} (map :requires path))))
   ([path state]
     (reduce run-action state path)))
 

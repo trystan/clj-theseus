@@ -8,28 +8,31 @@ The ideal of theseus is that with a good description of your application, you co
 
 **Decomplected** because instead of having a large set of automated integration tests where each test navigates through your system to a specific place, does some stuff, and verifies some state along the way; you keep your assertions, data, states, how to navigate, how to do domain actions, etc all seperate and theseus combines them for you.
 
-First you create a catalog of facts about your system that describe preconditions, postconditions, actions, states, and descriptions about your system. Each fact is a map with several keys:
+First you create a catalog of facts about your system that describe preconditions, postconditions, actions, states, and descriptions about your system. Each fact is a map with several keys. Most facts will be either descriptions of actions that have a `:from`, `:to`, and `:fn` function or descriptions of what you expect that have either a `:before`, or an `:after`, and a `:verify` function.
+
+The available keys are:
 
 <table>
   <tr><td>:id</td>
       <td>A unique identifier. Optional, unless you want this fact to be the target of a :before or :after.</td></tr>
   <tr><td>:name</td>
-      <td>A natural language description that is displayed when drawing a graph of your system. Required if you want it to show up when drawing a graph.</td></tr>
+      <td>A natural language description that is displayed when drawing a graph of your system. Generaly a good idean but required if you want it to show up when drawing a graph.</td></tr>
   <tr><td>:from</td>
       <td>The state this action is available from. Optional but expected of actions.</td></tr>
   <tr><td>:to</td>
       <td>The state your system is in after this action is run. Optional but expected of actions.</td></tr>
   <tr><td>:fn</td>
-      <td>A function that takes the current state and returns a new one. Don't put assertions in :fn functions - assertions should go in :invariant functions. If an :invariant and an :fn are both present on the same fact, the :invariant will be run first. Optional but expected of actions.</td></tr>
+      <td>A function that takes the current state and returns a new one. It should do everything needed to transition to the new state instead of failing. Don't put assertions in :fn functions - assertions should go in :verify functions. If a :verify and an :fn are both present on the same fact, the :verify will be run last. Optional but expected of actions.</td></tr>
   <tr><td>:before</td>
-      <td>If specified, this action will appear before the value. Optional but expected of invariants and setup. Can be :all, :each, or the :id of another fact.</td></tr>
+      <td>If specified, this action will appear before the value. Optional but generaly used for verification and setup. Can be :all, :each, or the :id of another fact.</td></tr>
   <tr><td>:after</td>
-      <td>If specified, this action will appear after the value. Optional but expected of invariants and cleanup. Can be :all, :each, or the :id of another fact.</td></tr>
-  <tr><td>:invariant</td>
-      <td>A function that takes the current state. It's return value is ignored. If an :invariant and an :fn are both present on the same fact, the invariant will be run first.</td></tr>
+      <td>If specified, this action will appear after the value. Optional but generaly used for verification and cleanup. Can be :all, :each, or the :id of another fact.</td></tr>
+  <tr><td>:verify</td>
+      <td>A function that takes the current state. Its return value is ignored. If a :verify and an :fn are both present on the same fact, the verify will be run last.</td></tr>
+  <tr><td>:requires</td>
+      <td>A map of required initial state. Two actions with incompatable :requires will **not** appear in the same path. `{:a 1}` and `{:a 1}` are compatable; as is `{:a 1}` and `{:b 2}`. However; `{:a 1}` and `{:a 2}` are not compatable. All `:reqires` are merged to form the initial state when running actions.</td></tr>
 </table>
 
-Most facts will be either descriptions of actions that have a `:from`, `:to`, and `:fn` or descriptions of what you expect that have either a `:before`, or an `:after`, and an `:invariant`.
 
 ## Installation
 
@@ -81,15 +84,15 @@ In Leiningen:
    :fn increment-state-counter}
 
   {:before :all
-   :invariant (fn [state]
+   :verify (fn [state]
                   (has-content (str "Hello " (:user-name state))))}
 
   {:after :each
-   :invariant (fn [state]
+   :verify (fn [state]
                   (has-content (str "Hello " (:user-name state))))}
 
   {:before :go-to-help
-   :invariant (fn [state]
+   :verify (fn [state]
                   (has-content (str "Hello " (:user-name state))))}])
 
 (draw facts "/tmp/example.svg")
@@ -104,7 +107,7 @@ In Leiningen:
 
 ## To do
 
-**Allow `:before` and `:after` to apply to states** as well as `:all`, `:each`, and a specific id. I'm not sure how that would work out best, but it would be nice to verify invariants of a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
+**Allow `:before` and `:after` to apply to states** as well as `:all`, `:each`, and a specific id. I'm not sure how that would work out best, but it would be nice to verify assertions for a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
 
 **Let paths fork from each other.** This would be usefull if an action had a lot of side effects that could be verified in parallel. I think it would be safe to fork paths as long as they didn't affect what has been done before them so maybe it would be better to express that.
 ```clj
@@ -120,25 +123,14 @@ In Leiningen:
          (share-on "twitter")))}
 {:after :share-everywhere
  :fork true
- :invariant (partial verify-shared-on "facebook")}
+ :verify (partial verify-shared-on "facebook")}
 {:after :share-everywhere
  :fork true
- :invariant (partial verify-shared-on "reddit")}
+ :verify (partial verify-shared-on "reddit")}
 {:after :share-everywhere
  :fork true
- :invariant (partial verify-shared-on "linked in")}
+ :verify (partial verify-shared-on "linked in")}
 {:after :share-everywhere
  :fork true
- :invariant (partial verify-shared-on "twitter")}
-```
-
-**Have actions express data preconditions** that other actions can use. So a `share-on-facebook` action can express that it only works with users who have facebook accounts and an earlier `login` action would know to login as a facebook user.
-
-```clj
-;; just a possible thought
-{:id :share-on-facebook
- :from :share-screen
- :to :after-share-screen
- :fn (partial share-on "facebook")
- :requires { :is-facebook-user true })}
+ :verify (partial verify-shared-on "twitter")}
 ```

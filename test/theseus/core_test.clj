@@ -19,6 +19,16 @@
     (is (= [[{ :from :a :to :b } { :from :b :to :a } { :from :a :to :c }]]
            (steps [[{ :from :a :to :b } { :from :b :to :a }]] [{ :from :a :to :b } { :from :a :to :c }])))))
 
+(deftest requirements
+  (is (= true
+         (compatable-requirements { :a 1 } { :a 1 })))
+
+  (is (= true
+         (compatable-requirements { :a 1 } { :b 2 })))
+
+  (is (= false
+         (compatable-requirements { :a 1 } { :a 2 }))))
+
 (deftest walking-all-actions
   (is (= [[{ :from :a :to :b } { :from :b :to :c }] [{ :from :a :to :c }]]
          (paths [{ :from :a :to :b }
@@ -26,7 +36,25 @@
                  { :from :b :to :d }
                  { :from :y :to :z }
                  { :from :a :to :c }]
-                :a :c))))
+                :a :c)))
+
+  (testing "allow compatable requirements"
+    (is (= [[{ :from :a :to :b :requires { :foo true } } { :from :b :to :c :requires { :bar true } }]]
+           (paths [{ :from :a :to :b :requires { :foo true } }
+                   { :from :b :to :c :requires { :bar true } }]
+                  :a :c))))
+
+  (testing "allow matching requirements"
+    (is (= [[{ :from :a :to :b :requires { :foo true } } { :from :b :to :c :requires { :foo true } }]]
+           (paths [{ :from :a :to :b :requires { :foo true } }
+                   { :from :b :to :c :requires { :foo true } }]
+                  :a :c))))
+
+  (testing "avoid incompatable requirements"
+    (is (= [[{ :from :a :to :b :requires { :foo true } }]]
+           (paths [{ :from :a :to :b :requires { :foo true } }
+                   { :from :b :to :c :requires { :foo false } }]
+                  :a :c)))))
 
 (deftest before-all
   (is (= [[{ :before :all :a 1 } { :before :all :b 1 } { :from :a :to :b } { :from :b :to :c }]
@@ -98,7 +126,7 @@
                  { :from :a :to :c }]
                 :a :c))))
 
-(def invariant-counter (atom 0))
+(def verify-counter (atom 0))
 
 (deftest running-actions
   (testing "runs fn"
@@ -107,15 +135,19 @@
                  { :something :else }
                  { :id :b :fn #(assoc % :second? true) }]))))
 
-  (testing "runs invariant"
-    (let [before @invariant-counter
+  (testing "runs verify"
+    (let [before @verify-counter
           result (run [{ :id :a :fn #(assoc % :first? true) }
-                       { :invariant (fn [state] (swap! invariant-counter inc)) }
+                       { :verify (fn [state] (swap! verify-counter inc)) }
                        { :id :b :fn #(assoc % :second? true) }])
-          after @invariant-counter]
+          after @verify-counter]
       (is (= { :first? true :second? true }
              result))
       (is (= (inc before)
-             after)))))
+             after))))
+
+  (testing "merges :requires"
+    (is (= { :a 1 :b 2}
+           (run [{ :requires { :a 1 }} { :requires { :b 2 } }])))))
 
 (run-tests)
