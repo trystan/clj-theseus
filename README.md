@@ -123,8 +123,8 @@ The supported keys are:
  :from :move-screen
  :to :moved-screen
  :fn some-other-function
- :requires [{ :user-home-state "NV" }]
- :ensures [{ :user-home-state "CA" }]}
+ :requires { :user-home-state "NV" }
+ :ensures { :user-home-state "CA" }}
 ```
 
 **Allow `:before` and `:after` to apply to states**. I'm not sure how that would work out best, but it would be nice to verify assertions for a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
