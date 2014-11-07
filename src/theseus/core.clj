@@ -69,22 +69,25 @@
        :else
          (recur (conj so-far here) remaining paths)))))
 
+(defn add-ancillary
+  "Add all before and after facts to a path"
+  [facts path]
+  (let [before-all (filter #(= :all (:before %)) facts)
+        before-each (filter #(= :each (:before %)) facts)
+        after-all (filter #(= :all (:after %)) facts)
+        after-each (filter #(= :each (:after %)) facts)
+        before (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) facts))
+        after (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) facts))]
+    (->> path
+         (mapcat (fn [x] (concat before-each (before x) [x] (after x) after-each)))
+         (#(concat before-all % after-all)))))
 
 (defn paths
-  "Find all paths in the facts of defined actions from one place to another. Includes befores and afters."
+  "Find all paths in the facts of defined actions from one place to another."
   ([facts from to]
-    (let [before-all (filter #(= :all (:before %)) facts)
-          before-each (filter #(= :each (:before %)) facts)
-          after-all (filter #(= :all (:after %)) facts)
-          after-each (filter #(= :each (:after %)) facts)
-          before (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) facts))
-          after (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) facts))
-          starting-paths (map vector (actions-from from facts))
+   (let [starting-paths (map vector (actions-from from facts))
           all-paths (paths-from starting-paths facts)]
-      (->> all-paths
-           (mapcat #(sub-paths-to to %))
-           (map #(mapcat (fn [x] (concat before-each (before x) [x] (after x) after-each)) %))
-           (map #(concat before-all % after-all))))))
+      (mapcat #(sub-paths-to to %) all-paths))))
 
 
 (defn run-action

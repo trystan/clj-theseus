@@ -100,18 +100,40 @@ The supported keys are:
                   (has-content (str "Hello " (:user-name state))))}])
 
 (draw facts "/tmp/example.svg")
-;; returns => nil
+;; returns nil
 
-(map #(map :id (filter :id %)) (paths facts :start-screen :logout-screen))
-;; returns => ((:login :become-fancy :logout-from-fancy-screen) (:login :go-to-help :logout-from-help-screen))
+(->> (paths facts :start-screen :logout-screen)
+     (map (partial add-ancillary facts))
+     (map #(map :id (filter :id %))))
+;; returns ((:login :become-fancy :logout-from-fancy-screen) (:login :go-to-help :logout-from-help-screen))
 
-((comp run first) (paths facts :start-screen :logout-screen))
-;; returns => {:counter 3}
+(->> (paths facts :start-screen :logout-screen)
+     (map (partial add-ancillary facts))
+     (first)
+     (run))
+;; returns {:counter 3}
 ```
 
 ## To do
 
+**Allow facts to express after-state like they do with required state. This would be used when creating paths.
+```clj
+;; just a possible thought
+{:id :move-from-nevada-to-california
+ :from :move-screen
+ :to :moved-screen
+ :fn some-other-function
+ :requires [{ :user-home-state "NV" }]
+ :ensures [{ :user-home-state "CA" }]}
+```
+
 **Allow `:before` and `:after` to apply to states**. I'm not sure how that would work out best, but it would be nice to verify assertions for a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
+```clj
+;; just a possible thought
+{:before :welcome-screen
+ :verify (fn [state]
+             (has-content (str "Hello " (:user-name state))))}])
+```
 
 **Let paths fork from each other.** This would be usefull if an action had a lot of side effects that could be verified in parallel by running in new browser tabs (for example). I think it would be safe to fork paths as long as they didn't affect what has been done before them so maybe it would be better to express that.
 ```clj
