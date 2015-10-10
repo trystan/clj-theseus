@@ -11,6 +11,15 @@
     (is (= [[{ :from :a :to :b } { :from :b :to :c }]]
            (steps [[{ :from :a :to :b }]] [{ :from :b :to :c }]))))
 
+  (testing "from a list"
+    (is (= [[{ :from :a :to :b } { :from [:x :b :y] :to :c }]]
+           (steps [[{ :from :a :to :b }]] [{ :from [:x :b :y] :to :c }]))))
+
+  (testing "from a predicate"
+    (let [is-b (fn [s] (= s :b))]
+      (is (= [[{ :from :a :to :b } { :from is-b :to :c }]]
+             (steps [[{ :from :a :to :b }]] [{ :from is-b :to :c }])))))
+
   (testing "many further steps")
     (is (= [[{ :from :a :to :b } { :from :b :to :c }] [{ :from :a :to :b } { :from :b :to :d }]]
            (steps [[{ :from :a :to :b }]] [{ :from :b :to :c } { :from :b :to :d }])))

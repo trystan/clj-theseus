@@ -28,9 +28,9 @@ The supported keys are:
   <tr><td>:name</td>
       <td>A natural language description that is displayed when drawing a graph of your system. A good idea but only required if you want it to show up when drawing a graph.</td></tr>
   <tr><td>:from</td>
-      <td>The state this action is available from. Optional and generally used for actions.</td></tr>
+      <td>The state this action is available from. Optional and generally used for actions. :from is usually a symbol, but can also be a collection or a predicate that takes the current state.</td></tr>
   <tr><td>:to</td>
-      <td>The state your system is in after this action is run. Optional and generally used for actions.</td></tr>
+      <td>The state your system is in after this action is run. Optional and generally used for actions. :to is usually a symbol.</td></tr>
   <tr><td>:fn</td>
       <td>A function that takes the current state and returns a new one. Optional and generally used for actions. It should do everything needed to transition to the new state and only fail in extreme circumstances (that is, it should be robust instead of fail-fast). Don't put assertions in :fn functions - assertions should go in :verify functions. If a :verify and an :fn are both present on the same fact, the :verify will be run last.</td></tr>
   <tr><td>:before</td>
@@ -69,21 +69,15 @@ The supported keys are:
    :to :fancy-screen
    :fn increment-state-counter}
 
-  {:id :logout-from-fancy-screen
-   :name "logout"
-   :from :fancy-screen
-   :to :logout-screen
-   :fn increment-state-counter}
-
   {:id :go-to-help
    :name "help"
    :from :home-screen
    :to :help-screen
    :fn increment-state-counter}
 
-  {:id :logout-from-help-screen
+  {:id :logout
    :name "logout"
-   :from :help-screen
+   :from [:fancy-screen :help-screen]
    :to :logout-screen
    :fn increment-state-counter}
 
@@ -104,7 +98,7 @@ The supported keys are:
 
 (->> (paths facts :start-screen :logout-screen)
      (map #(map :id (filter :id %))))
-;; returns ((:login :become-fancy :logout-from-fancy-screen) (:login :go-to-help :logout-from-help-screen))
+;; returns ((:login :become-fancy :logout-from-fancy-screen) (:login :go-to-help :logout))
 
 (->> (paths facts :start-screen :logout-screen)
      (first)
@@ -147,14 +141,14 @@ The supported keys are:
          (share-on "twitter")))}
 {:after :share-everywhere
  :fork true
- :verify (partial verify-shared-on "facebook")}
+ :verify #(verify-shared-on "facebook")}
 {:after :share-everywhere
  :fork true
- :verify (partial verify-shared-on "reddit")}
+ :verify #(verify-shared-on "reddit")}
 {:after :share-everywhere
  :fork true
- :verify (partial verify-shared-on "linked in")}
+ :verify #(verify-shared-on "linked in")}
 {:after :share-everywhere
  :fork true
- :verify (partial verify-shared-on "twitter")}
+ :verify #(verify-shared-on "twitter")}
 ```

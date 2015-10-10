@@ -14,7 +14,12 @@
 (defn actions-from
   "Find all actions from some place in a collection of facts."
   [place facts]
-  (filter #(= place (:from %)) facts))
+  (for [fact facts
+        :when (cond
+               (coll? (:from fact)) (.contains (:from fact) place)
+               (fn? (:from fact))   ((:from fact) place)
+               :else                (= place (:from fact)))]
+    fact))
 
 
 (defn has-value-or-missing [m k v]

@@ -1,4 +1,4 @@
-(defproject theseus "0.1.0"
+(defproject theseus "0.1.1"
   :description "Path-based testing decomplected"
   :url "https://github.com/trystan/theseus"
   :license {:name "BSD 3-Clause License"
