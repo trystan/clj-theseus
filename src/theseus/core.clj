@@ -8,7 +8,7 @@
 (defn not-in?
   "Return true if x is not in coll."
   [coll x]
-  (not-any? (hash-set x) coll))
+  (not (.contains coll x)))
 
 
 (defn actions-from
@@ -86,8 +86,9 @@
   "Find all paths in the facts of defined actions from one place to another."
   ([facts from to]
    (let [starting-paths (map vector (actions-from from facts))
-          all-paths (paths-from starting-paths facts)]
-      (mapcat #(sub-paths-to to %) all-paths))))
+         all-paths (paths-from starting-paths facts)
+         full-paths (mapcat #(sub-paths-to to %) all-paths)]
+      (map #(add-ancillary facts %) full-paths))))
 
 
 (defn run-action
@@ -108,7 +109,7 @@
 
 (defn draw
   "Draw an svg facts of a collection of facts."
-  [facts path]
+  [facts filepath]
   (let [valid-nodes (filter :name facts)
         add-nodes (fn [g nodes]
           (reduce (fn [g n] (add-node g n (.replace (name n) "-" " ")))
@@ -125,4 +126,4 @@
               (add-edges valid-nodes)
               (layout :hierarchical :flow :out)
               (build))]
-    (export g path :indent "yes")))
+    (export g filepath :indent "yes")))

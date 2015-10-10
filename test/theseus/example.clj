@@ -53,10 +53,8 @@
 (draw facts "/tmp/example.svg")
 
 (->> (paths facts :start-screen :logout-screen)
-     (map (partial add-ancillary facts))
      (map #(map :id (filter :id %))))
 
 (->> (paths facts :start-screen :logout-screen)
-     (map (partial add-ancillary facts))
      (first)
      (run))
