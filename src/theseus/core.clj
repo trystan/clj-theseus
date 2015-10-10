@@ -81,8 +81,20 @@
         before-each (filter #(= :each (:before %)) facts)
         after-all (filter #(= :all (:after %)) facts)
         after-each (filter #(= :each (:after %)) facts)
-        before (fn [x] (filter #(and (:before %) (= (:id x) (:before %))) facts))
-        after (fn [x] (filter #(and (:after %) (= (:id x) (:after %))) facts))]
+        before (fn [x] (filter #(and (:before %) (cond
+                                                  (coll? (:before %)) (or (.contains (:before %) (:id x))
+                                                                          (.contains (:before %) (:to x)))
+                                                  (fn? (:before %)) (or ((:before %) (:id x))
+                                                                        ((:before %) (:to x)))
+                                                  :else (or (= (:id x) (:before %))
+                                                            (= (:to x) (:before %))))) facts))
+        after (fn [x] (filter #(and (:after %) (cond
+                                                (coll? (:after %)) (or (.contains (:after %) (:id x))
+                                                                       (.contains (:after %) (:to x)))
+                                                (fn? (:after %)) (or ((:after %) (:id x))
+                                                                     ((:after %) (:to x)))
+                                                :else (or (= (:id x) (:after %))
+                                                          (= (:to x) (:after %))))) facts))]
     (->> path
          (mapcat (fn [x] (concat before-each (before x) [x] (after x) after-each)))
          (#(concat before-all % after-all)))))

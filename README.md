@@ -32,11 +32,11 @@ The supported keys are:
   <tr><td>:to</td>
       <td>The state your system is in after this action is run. Optional and generally used for actions. :to is usually a symbol.</td></tr>
   <tr><td>:fn</td>
-      <td>A function that takes the current state and returns a new one. Optional and generally used for actions. It should do everything needed to transition to the new state and only fail in extreme circumstances (that is, it should be robust instead of fail-fast). Don't put assertions in :fn functions - assertions should go in :verify functions. If a :verify and an :fn are both present on the same fact, the :verify will be run last.</td></tr>
+      <td>A function that takes the current state and returns a new one. Optional and generally used for actions. It should do everything needed to transition to the new state and only fail in extreme circumstances (that is, it should be robust instead of fail-fast). Don't put assertions in :fn functions - assertions should go in :verify functions. If a :verify and an :fn are both present on the same fact, the :fn will be run first.</td></tr>
   <tr><td>:before</td>
-      <td>If specified, this action will appear before the value. Optional and generally used for expectations and setup. Can be :all, :each, or the :id of another fact.</td></tr>
+      <td>If specified, this action will appear before the value. Optional and generally used for expectations and setup. Can be :all, :each, the :id of another fact, a state, a list of :ids and states, or a predicate that takes an :id or state.</td></tr>
   <tr><td>:after</td>
-      <td>If specified, this action will appear after the value. Optional and generally used for expectations and cleanup. Can be :all, :each, or the :id of another fact.</td></tr>
+      <td>If specified, this action will appear after the value. Optional and generally used for expectations and cleanup. Can be :all, :each, the :id of another fact, a state, a list of :ids and states, or a predicate that takes an :id or state.</td></tr>
   <tr><td>:verify</td>
       <td>A function that takes the current state - its return value is ignored. Optional and generally used for expectations. If a :verify and an :fn are both present on the same fact, the verify will be run last.</td></tr>
   <tr><td>:requires</td>
@@ -117,14 +117,6 @@ The supported keys are:
  :fn some-other-function
  :requires { :user-home-state "NV" }
  :ensures { :user-home-state "CA" }}
-```
-
-**Allow `:before` and `:after` to apply to states.** I'm not sure how that would work out best, but it would be nice to verify assertions for a specific screen (eg, `if the user is logged in, then the user's name appears on the home screen`).
-```clj
-;; just a possible thought
-{:before :welcome-screen
- :verify (fn [state]
-             (has-content (str "Hello " (:user-name state))))}])
 ```
 
 **Allow paths to fork from each other.** This would be usefull if an action had a lot of side effects that could be verified in parallel by running in new browser tabs (for example). I think it would be safe to fork paths as long as they didn't affect what has been done before them so maybe it would be better to express that.

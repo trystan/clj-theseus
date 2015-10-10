@@ -116,24 +116,122 @@
            (paths facts :a :c)))))
 
 (deftest before-id
-  (is (= [[{ :from :a :to :b } { :before :pizza :a 1 } { :from :b :to :c :id :pizza }] [{ :from :a :to :c }]]
-         (let [facts [{ :from :a :to :b }
-                      { :from :b :to :c :id :pizza }
-                      { :from :b :to :d }
-                      { :before :pizza :a 1 }
-                      { :from :y :to :z }
-                      { :from :a :to :c }]]
-           (paths facts :a :c)))))
+  (testing "before a transition"
+    (is (= [[{ :from :a :to :b } { :before :pizza :z 1 } { :from :b :to :c :id :pizza }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b }
+                        { :from :b :to :c :id :pizza }
+                        { :from :b :to :d }
+                        { :before :pizza :z 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (is (= [[{ :from :a :to :b } { :before [:pizza] :z 1 } { :from :b :to :c :id :pizza }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b }
+                        { :from :b :to :c :id :pizza }
+                        { :from :b :to :d }
+                        { :before [:pizza] :z 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (let [is-pizza #(= % :pizza)]
+      (is (= [[{ :from :a :to :b } { :before is-pizza :z 1 } { :from :b :to :c :id :pizza }] [{ :from :a :to :c }]]
+             (let [facts [{ :from :a :to :b }
+                          { :from :b :to :c :id :pizza }
+                          { :from :b :to :d }
+                          { :before is-pizza :z 1 }
+                          { :from :y :to :z }
+                          { :from :a :to :c }]]
+               (paths facts :a :c))))))
+
+  (testing "before a state"
+    (is (= [[{ :before :b :z 1 } { :from :a :to :b } { :from :b :to :c }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b }
+                        { :from :b :to :c }
+                        { :from :b :to :d }
+                        { :before :b :z 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (is (= [[{ :before [:b] :z 1 } { :from :a :to :b } { :from :b :to :c }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b }
+                        { :from :b :to :c }
+                        { :from :b :to :d }
+                        { :before [:b] :z 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (let [is-b #(= % :b)]
+      (is (= [[{ :before is-b :z 1 } { :from :a :to :b } { :from :b :to :c }] [{ :from :a :to :c }]]
+             (let [facts [{ :from :a :to :b }
+                          { :from :b :to :c }
+                          { :from :b :to :d }
+                          { :before is-b :z 1 }
+                          { :from :y :to :z }
+                          { :from :a :to :c }]]
+               (paths facts :a :c)))))))
 
 (deftest after-id
-  (is (= [[{ :from :a :to :b :id :pizza } { :after :pizza :a 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
-         (let [facts [{ :from :a :to :b :id :pizza }
-                      { :from :b :to :c }
-                      { :from :b :to :d }
-                      { :after :pizza :a 1 }
-                      { :from :y :to :z }
-                      { :from :a :to :c }]]
-           (paths facts :a :c)))))
+  (testing "after a transition"
+    (is (= [[{ :from :a :to :b :id :pizza } { :after :pizza :a 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b :id :pizza }
+                        { :from :b :to :c }
+                        { :from :b :to :d }
+                        { :after :pizza :a 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (is (= [[{ :from :a :to :b :id :pizza } { :after [:pizza] :a 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b :id :pizza }
+                        { :from :b :to :c }
+                        { :from :b :to :d }
+                        { :after [:pizza] :a 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (let [is-pizza #(= % :pizza)]
+      (is (= [[{ :from :a :to :b :id :pizza } { :after is-pizza :a 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
+             (let [facts [{ :from :a :to :b :id :pizza }
+                          { :from :b :to :c }
+                          { :from :b :to :d }
+                          { :after is-pizza :a 1 }
+                          { :from :y :to :z }
+                          { :from :a :to :c }]]
+               (paths facts :a :c))))))
+
+  (testing "after a state"
+    (is (= [[{ :from :a :to :b } { :after :b :z 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b }
+                        { :from :b :to :c }
+                        { :from :b :to :d }
+                        { :after :b :z 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (is (= [[{ :from :a :to :b } { :after [:b] :z 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
+           (let [facts [{ :from :a :to :b }
+                        { :from :b :to :c }
+                        { :from :b :to :d }
+                        { :after [:b] :z 1 }
+                        { :from :y :to :z }
+                        { :from :a :to :c }]]
+             (paths facts :a :c))))
+
+    (let [is-b #(= % :b)]
+      (is (= [[{ :from :a :to :b } { :after is-b :z 1 } { :from :b :to :c }] [{ :from :a :to :c }]]
+             (let [facts [{ :from :a :to :b }
+                          { :from :b :to :c }
+                          { :from :b :to :d }
+                          { :after is-b :z 1 }
+                          { :from :y :to :z }
+                          { :from :a :to :c }]]
+               (paths facts :a :c)))))))
 
 (def verify-counter (atom 0))
 

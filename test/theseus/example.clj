@@ -20,21 +20,15 @@
    :to :fancy-screen
    :fn increment-state-counter}
 
-  {:id :logout-from-fancy-screen
-   :name "logout"
-   :from :fancy-screen
-   :to :logout-screen
-   :fn increment-state-counter}
-
   {:id :go-to-help
    :name "help"
    :from :home-screen
    :to :help-screen
    :fn increment-state-counter}
 
-  {:id :logout-from-help-screen
+  {:id :logout
    :name "logout"
-   :from :help-screen
+   :from [:fancy-screen :help-screen]
    :to :logout-screen
    :fn increment-state-counter}
 
