@@ -18,7 +18,7 @@ In Leiningen:
 
 ## To use
 
-First you create a collection of facts about your system that describe preconditions, postconditions, actions, states, and descriptions about your system. Each fact is a map with several keys. Most facts will be either descriptions of **actions** that have a `:from`, `:to`, and `:fn` function or descriptions of **expectations** that have either a `:before`, or an `:after`, and a `:verify` function.
+First you create a collection of facts about your system that describe preconditions, postconditions, actions, location, and descriptions about your system. Each fact is a map with several keys. Most facts will be either a description of an **action** that has a `:from` location, `:to` location, and `:fn` function or a description of an **expectation** that has either a `:before`, or an `:after`, and a `:verify` function.
 
 The supported keys are:
 
@@ -28,19 +28,21 @@ The supported keys are:
   <tr><td>:name</td>
       <td>A natural language description that is displayed when drawing a graph of your system. A good idea but only required if you want it to show up when drawing a graph.</td></tr>
   <tr><td>:from</td>
-      <td>The state this action is available from. Optional and generally used for actions. :from is usually a symbol, but can also be a collection or a predicate that takes the current state.</td></tr>
+      <td>The location this action is available from. Optional and generally used for actions. :from is usually a symbol, but can also be a collection or a predicate that takes the current location.</td></tr>
   <tr><td>:to</td>
-      <td>The state your system is in after this action is run. Optional and generally used for actions. :to is usually a symbol.</td></tr>
+      <td>The location your system is in after this action is run. Optional and generally used for actions. :to is usually a symbol.</td></tr>
   <tr><td>:fn</td>
       <td>A function that takes the current state and returns a new one. Optional and generally used for actions. It should do everything needed to transition to the new state and only fail in extreme circumstances (that is, it should be robust instead of fail-fast). Don't put assertions in :fn functions - assertions should go in :verify functions. If a :verify and an :fn are both present on the same fact, the :fn will be run first.</td></tr>
   <tr><td>:before</td>
-      <td>If specified, this action will appear before the value. Optional and generally used for expectations and setup. Can be :all, :each, the :id of another fact, a state, a list of :ids and states, or a predicate that takes an :id or state.</td></tr>
+      <td>If specified, this action will appear before the value. Optional and generally used for expectations and setup. Can be :all, :each, the :id of another fact, a location, a list of :ids and locations, or a predicate that takes an :id or location.</td></tr>
   <tr><td>:after</td>
-      <td>If specified, this action will appear after the value. Optional and generally used for expectations and cleanup. Can be :all, :each, the :id of another fact, a state, a list of :ids and states, or a predicate that takes an :id or state.</td></tr>
+      <td>If specified, this action will appear after the value. Optional and generally used for expectations and cleanup. Can be :all, :each, the :id of another fact, a location, a list of :ids and locations, or a predicate that takes an :id or location.</td></tr>
   <tr><td>:verify</td>
       <td>A function that takes the current state - its return value is ignored. Optional and generally used for expectations. If a :verify and an :fn are both present on the same fact, the verify will be run last.</td></tr>
   <tr><td>:requires</td>
-      <td>A map of required initial state. Optional and generally used for actions. Two actions with incompatable :requires will not appear in the same path. {:requires {:a 1}} and {:requires {:a 1}} are compatable; as is {:requires {:a 1}} and {:requires {:b 2}}. However; {:requires {:a 1}} and {:requires {:a 2}} are not compatable. All :requires in the path are merged to form the initial state when running a path.</td></tr>
+      <td>A map of required initial state. Optional and generally used for actions. Two actions with incompatable :requires will not appear in the same path. {:requires {:a 1}} and {:requires {:a 1}} are compatable; as is {:requires {:a 1}} and {:requires {:b 2}}. However; {:requires {:a 1}} and {:requires {:a 2}} are not compatable. All :requires in the path are merged to form the initial state when running a path.</td>
+  <tr><td>:repeat</td>
+      <td>If true, this fact can be repeated. Useful for when :from is a collection or predicate.</td></tr></tr>
 </table>
 
 
@@ -85,11 +87,7 @@ The supported keys are:
    :verify (fn [state]
                   (has-content (str "Hello " (:user-name state))))}
 
-  {:after :each
-   :verify (fn [state]
-                  (has-content (str "Hello " (:user-name state))))}
-
-  {:before :go-to-help
+  {:after :home-screen
    :verify (fn [state]
                   (has-content (str "Hello " (:user-name state))))}])
 
