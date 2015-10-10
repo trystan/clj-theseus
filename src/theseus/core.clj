@@ -36,7 +36,8 @@
   (let [requires (apply merge (map :requires path))
         next-steps (actions-from (:to (last path)) facts)
         compatable-steps (filter #(compatable-requirements requires (:requires %)) next-steps)
-        valid-next-steps (filter (partial not-in? path) compatable-steps)]
+        valid-next-steps (filter #(or (:repeat %)
+                                      (not-in? path %)) compatable-steps)]
     (if (seq valid-next-steps)
       (map #(conj path %) valid-next-steps)
       [path])))
@@ -125,7 +126,7 @@
 
 
 (defn draw
-  "Draw an svg facts of a collection of facts."
+  "Draw an svg image of a collection of facts."
   [facts filepath]
   (let [valid-nodes (filter :name facts)
         add-nodes (fn [g nodes]
@@ -134,12 +135,15 @@
                   nodes))
         add-edges (fn [g edges]
           (reduce (fn [g e]
-                    (add-label (add-edge g (:id e) (:from e) (:to e)) (:id e) (:name e)))
+                    (cond
+                     (coll? (:from e)) g
+                     (fn? (:from e)) g
+                     :else (add-label (add-edge g (:id e) (:from e) (:to e)) (:id e) (:name e))))
                   g
                   edges))
         g (-> (graph :width 1024 :height 768)
               (add-default-edge-style :stroke "grey")
-              (add-nodes (distinct (concat (map :from valid-nodes) (map :to valid-nodes))))
+              (add-nodes (distinct (filter keyword? (concat (map :from valid-nodes) (map :to valid-nodes)))))
               (add-edges valid-nodes)
               (layout :hierarchical :flow :out)
               (build))]

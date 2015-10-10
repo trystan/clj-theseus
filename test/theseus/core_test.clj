@@ -11,6 +11,10 @@
     (is (= [[{ :from :a :to :b } { :from :b :to :c }]]
            (steps [[{ :from :a :to :b }]] [{ :from :b :to :c }]))))
 
+  (testing "repeat step"
+    (is (= [[{ :from :a :to :a :repeat true } { :from :a :to :a :repeat true }]]
+           (steps [[{ :from :a :to :a :repeat true }]] [{ :from :a :to :a :repeat true }]))))
+
   (testing "from a list"
     (is (= [[{ :from :a :to :b } { :from [:x :b :y] :to :c }]]
            (steps [[{ :from :a :to :b }]] [{ :from [:x :b :y] :to :c }]))))
